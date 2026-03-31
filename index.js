@@ -1,174 +1,113 @@
+```js
 const {
   Client,
   GatewayIntentBits,
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  StringSelectMenuBuilder,
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
-  Events
+  Events,
+  EmbedBuilder
 } = require('discord.js');
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
 
-// 📊 DATA (FIXED + NO DUPLICATE)
+// 📊 DATA
 const executors = {
-  // FULL SUPPORT
-  "volt": { status: "🟢 FULL SUPPORT", stability: "100%" },
-  "arceus X": { status: "🟢 FULL SUPPORT", stability: "100%" },
-  "delta": { status: "🟢 FULL SUPPORT", stability: "96%" },
-  "potassium": { status: "🟢 FULL SUPPORT", stability: "93%" },
-  "cosmic": { status: "🟢 FULL SUPPORT", stability: "95%" },
-  "synapse z": { status: "🟢 FULL SUPPORT", stability: "99%" },
+  "volt": { status: "🟢 FULL SUPPORT", stability: 100 },
+  "arceusX": { status: "🟢 FULL SUPPORT", stability: 100 },
+  "delta": { status: "🟢 FULL SUPPORT", stability: 98 },
+  "potassium": { status: "🟢 FULL SUPPORT", stability: 99 },
+  "cosmic": { status: "🟢 FULL SUPPORT", stability: 99 },
+  "synapse z": { status: "🟢 FULL SUPPORT", stability: 100 },
 
-  // LIMITED
-  "wave": { status: "🟡 LIMITED", stability: "75%" },
-  "isaeva": { status: "🟡 LIMITED", stability: "70%" },
-  "velocity": { status: "🟡 LIMITED", stability: "72%" },
-  "codex": { status: "🟡 LIMITED", stability: "68%" },
+  "wave": { status: "🟡 LIMITED", stability: 75 },
+  "isaeva": { status: "🟡 LIMITED", stability: 70 },
+  "velocity": { status: "🟡 LIMITED", stability: 72 },
+  "codex": { status: "🟡 LIMITED", stability: 68 },
 
-  // NOT RECOMMENDED
-  "xeno": { status: "🔴 NOT RECOMMENDED", stability: "40%" },
-  "solara": { status: "🔴 NOT RECOMMENDED", stability: "35%" },
-  "seliware": { status: "🔴 NOT RECOMMENDED", stability: "30%" },
+  "xeno": { status: "🔴 NOT RECOMMENDED", stability: 40 },
+  "solara": { status: "🔴 NOT RECOMMENDED", stability: 35 },
+  "seliware": { status: "🔴 NOT RECOMMENDED", stability: 30 },
 
-  // UNKNOWN
-  "sirhurt": { status: "⚪ UNKNOWN", stability: "??" },
-  "bunni.fun": { status: "⚪ UNKNOWN", stability: "??" },
-  "volcano": { status: "⚪ UNKNOWN", stability: "??" },
-  "vega x": { status: "⚪ UNKNOWN", stability: "??" }
+  "sirhurt": { status: "⚪ UNKNOWN", stability: 50 },
+  "bunni.fun": { status: "⚪ UNKNOWN", stability: 50 },
+  "volcano": { status: "⚪ UNKNOWN", stability: 50 },
+  "vega x": { status: "⚪ UNKNOWN", stability: 50 }
 };
 
-// 🧠 FUZZY SEARCH (CLEAN VERSION)
-function findClosestExecutor(input) {
-  input = input.toLowerCase();
-
-  let bestMatch = null;
-  let bestScore = 0;
-
-  for (const name in executors) {
-    let score = 0;
-
-    for (let char of input) {
-      if (name.includes(char)) score++;
-    }
-
-    if (score > bestScore) {
-      bestScore = score;
-      bestMatch = name;
-    }
-  }
-
-  return bestScore > 2 ? bestMatch : null;
+// 🧠 AI AUTO ĐÁNH GIÁ
+function aiReview(data) {
+  if (data.stability >= 95) return "🔥 Extremely Stable - Recommended for heavy usage";
+  if (data.stability >= 80) return "✅ Stable - Good for most scripts";
+  if (data.stability >= 60) return "⚠️ Medium - Some features may fail";
+  if (data.stability >= 40) return "❌ Unstable - Not recommended";
+  return "💀 Risky - Avoid using";
 }
 
-// ✅ READY
-client.once('ready', () => {
-  console.log(`✅ Online: ${client.user.tag}`);
-});
+// 🎨 COLOR
+function getColor(status) {
+  if (status.includes("🟢")) return 0x00ff99;
+  if (status.includes("🟡")) return 0xffcc00;
+  if (status.includes("🔴")) return 0xff3333;
+  return 0x999999;
+}
 
-// 🎮 INTERACTIONS
-client.on(Events.InteractionCreate, async interaction => {
+// 📊 FULL TABLE EMBED
+function createFullEmbed() {
+  const embed = new EmbedBuilder()
+    .setTitle("📊 EXECUTOR DATABASE")
+    .setColor(0x5865F2);
 
-  // 🔘 BUTTON
-  if (interaction.isButton()) {
-
-    // 🔍 CHECK BUTTON
-    if (interaction.customId === "check") {
-      const modal = new ModalBuilder()
-        .setCustomId("modal_check")
-        .setTitle("🔍 Check Executor");
-
-      const input = new TextInputBuilder()
-        .setCustomId("name")
-        .setLabel("Enter executor name")
-        .setStyle(TextInputStyle.Short);
-
-      const row = new ActionRowBuilder().addComponents(input);
-      modal.addComponents(row);
-
-      await interaction.showModal(modal);
-    }
-
-    // 🎮 MENU BUTTON
-    if (interaction.customId === "menu") {
-      const select = new StringSelectMenuBuilder()
-        .setCustomId("select_executor")
-        .setPlaceholder("🎮 Choose executor...")
-        .addOptions(
-          Object.keys(executors).map(name => ({
-            label: name,
-            description: executors[name].status,
-            value: name
-          }))
-        );
-
-      await interaction.reply({
-        content: "🎮 Select executor:",
-        components: [new ActionRowBuilder().addComponents(select)],
-        ephemeral: true
-      });
-    }
-  }
-
-  // 🎮 DROPDOWN
-  if (interaction.isStringSelectMenu()) {
-    const name = interaction.values[0];
+  for (let name in executors) {
     const data = executors[name];
-
-    await interaction.reply({
-      content: `\`\`\`
-Executor : ${name}
-Status   : ${data.status}
-Stability: ${data.stability}
-\`\`\``,
-      ephemeral: true
+    embed.addFields({
+      name: `⚙️ ${name.toUpperCase()}`,
+      value: `${data.status}\n📊 Stability: ${data.stability}%`,
+      inline: true
     });
   }
 
-  // 🔍 MODAL SUBMIT
-  if (interaction.isModalSubmit()) {
-    const input = interaction.fields.getTextInputValue("name").toLowerCase();
+  return embed;
+}
 
-    let data = executors[input];
+// 🏆 LEADERBOARD
+function createLeaderboard() {
+  const sorted = Object.entries(executors)
+    .sort((a, b) => b[1].stability - a[1].stability)
+    .slice(0, 5);
 
-    // ❌ NOT FOUND → FUZZY
-    if (!data) {
-      const closest = findClosestExecutor(input);
+  return new EmbedBuilder()
+    .setTitle("🏆 TOP EXECUTORS")
+    .setColor(0xFFD700)
+    .setDescription(
+      sorted.map((e, i) =>
+        `#${i + 1} **${e[0]}** - ${e[1].stability}%`
+      ).join("\n")
+    );
+}
 
-      if (closest) {
-        const suggest = executors[closest];
-        return interaction.reply({
-          content: `⚠️ Not exact match\n👉 Did you mean: **${closest}**?\n\nStatus: ${suggest.status}\nStability: ${suggest.stability}`,
-          ephemeral: true
-        });
-      }
+// 🔍 EMBED DETAIL
+function createDetail(name, data) {
+  return new EmbedBuilder()
+    .setTitle(`⚙️ ${name.toUpperCase()}`)
+    .setColor(getColor(data.status))
+    .addFields(
+      { name: "Status", value: data.status, inline: true },
+      { name: "Stability", value: data.stability + "%", inline: true },
+      { name: "AI Review", value: aiReview(data) }
+    );
+}
 
-      return interaction.reply({
-        content: "❌ Executor not found",
-        ephemeral: true
-      });
-    }
-
-    // ✅ FOUND
-    await interaction.reply({
-      content: `\`\`\`
-Executor : ${input}
-Status   : ${data.status}
-Stability: ${data.stability}
-\`\`\``,
-      ephemeral: true
-    });
-  }
-});
-
-// 🚀 SEND PANEL (AUTO)
+// READY
 client.once('ready', async () => {
-  const channel = await client.channels.fetch("1488456249900142645");
+  console.log(`✅ Online: ${client.user.tag}`);
+
+  const channel = await client.channels.fetch("YOUR_CHANNEL_ID");
 
   const buttons = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
@@ -178,18 +117,84 @@ client.once('ready', async () => {
 
     new ButtonBuilder()
       .setCustomId("menu")
-      .setLabel("🎮 Open Menu")
-      .setStyle(ButtonStyle.Secondary)
+      .setLabel("📊 Full Database")
+      .setStyle(ButtonStyle.Secondary),
+
+    new ButtonBuilder()
+      .setCustomId("top")
+      .setLabel("🏆 Leaderboard")
+      .setStyle(ButtonStyle.Success)
   );
 
   await channel.send({
-    content: "⚙️ **EXECUTOR CONTROL PANEL**",
+    content: "⚙️ **EXECUTOR CONTROL PANEL v3**",
     components: [buttons]
   });
 });
 
-// 🔐 LOGIN
-client.login(process.env.TOKEN);
+// INTERACTIONS
+client.on(Events.InteractionCreate, async interaction => {
 
-// 💀 ANTI CRASH
+  if (interaction.isButton()) {
+
+    // 🔍 CHECK
+    if (interaction.customId === "check") {
+      const modal = new ModalBuilder()
+        .setCustomId("modal_check")
+        .setTitle("Check Executor");
+
+      const input = new TextInputBuilder()
+        .setCustomId("name")
+        .setLabel("Enter executor")
+        .setStyle(TextInputStyle.Short);
+
+      modal.addComponents(new ActionRowBuilder().addComponents(input));
+      return interaction.showModal(modal);
+    }
+
+    // 📊 FULL LIST
+    if (interaction.customId === "menu") {
+      const msg = await interaction.reply({
+        embeds: [createFullEmbed()],
+        ephemeral: true
+      });
+
+      setTimeout(() => interaction.deleteReply(), 120000);
+    }
+
+    // 🏆 LEADERBOARD
+    if (interaction.customId === "top") {
+      await interaction.reply({
+        embeds: [createLeaderboard()],
+        ephemeral: true
+      });
+
+      setTimeout(() => interaction.deleteReply(), 120000);
+    }
+  }
+
+  // 🔍 MODAL
+  if (interaction.isModalSubmit()) {
+    const input = interaction.fields.getTextInputValue("name").toLowerCase();
+
+    const data = executors[input];
+
+    if (!data) {
+      return interaction.reply({
+        content: "❌ Not found",
+        ephemeral: true
+      });
+    }
+
+    await interaction.reply({
+      embeds: [createDetail(input, data)],
+      ephemeral: true
+    });
+
+    setTimeout(() => interaction.deleteReply(), 120000);
+  }
+});
+
+client.login(process.env.TOKEN);
 process.on('unhandledRejection', console.error);
+```
