@@ -1,4 +1,3 @@
-```json
 {
   "name": "executor-bot",
   "version": "1.0.0",
@@ -11,4 +10,3 @@
     "discord.js": "^14.14.1"
   }
 }
-```
