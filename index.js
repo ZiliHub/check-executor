@@ -126,7 +126,7 @@ Stability: ${data.stability}
 
 // 🚀 SEND PANEL
 client.on('ready', async () => {
-  const channel = await client.channels.fetch("CHANNEL_ID");
+  const channel = await client.channels.fetch("1488456249900142645");
 
   const buttons = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
